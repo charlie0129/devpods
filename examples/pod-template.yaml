@@ -19,11 +19,13 @@ spec:
           memory: "256Gi"
           nvidia.com/gpu: "8"
           ephemeral-storage: "200Gi" # Avoid filling node disk.
-      volumeMounts:
-        - mountPath: /host
-          name: host
-  volumes:
-  - name: host
-    hostPath:
-      path: /
-      type: Directory # Make sure it exists.
+      # Mount the entire host root to Pod if you wish.
+      # volumeMounts:
+      #   - mountPath: /host
+      #     name: host
+  # Mount the entire host root to Pod if you wish.
+  # volumes:
+  # - name: host
+  #   hostPath:
+  #     path: /
+  #     type: Directory # Make sure it exists.
