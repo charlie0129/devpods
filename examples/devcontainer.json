@@ -1,0 +1,5 @@
+{
+    "init":true,
+    "privileged": true,
+    "image": "charlie0129/devpod:cuda-12.8.1"
+}

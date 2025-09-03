@@ -1,0 +1,29 @@
+# DevPod -> Provider (Kubernetes) -> Advanced Options -> Pod Manifest Template
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-template
+spec:
+  containers:
+    - name: devpod
+      # imagePullPolicy: Always # Test.
+      resources:
+        requests:
+          cpu: "8"
+          memory: "32Gi"
+          nvidia.com/gpu: "8"
+          ephemeral-storage: "200Gi"
+        limits:
+          cpu: "64"
+          memory: "256Gi"
+          nvidia.com/gpu: "8"
+          ephemeral-storage: "200Gi" # Avoid filling node disk.
+      volumeMounts:
+        - mountPath: /host
+          name: host
+  volumes:
+  - name: host
+    hostPath:
+      path: /
+      type: Directory # Make sure it exists.
