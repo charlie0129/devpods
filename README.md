@@ -12,5 +12,5 @@ To use custom image name, `DOCKER_REPO=exmaple.com/user/devpod DOCKER_TAG_PREFIX
 
 There are examples in `examples/`
 
-- `devcontainers.json`: You can put this in `.devcontainers/devcontainers.json` in a directory and create a workspace from it. So you can have privileged access.
+- `devcontainers.json`: You can put this in `.devcontainer/devcontainer.json` in a directory and create a workspace from it. So you can have privileged access.
 - `pod-template.yaml`: Add this to `DevPod -> Provider (Kubernetes) -> Advanced Options -> Pod Manifest Template`. So you can finetune you Kubernetes Pod yaml.
