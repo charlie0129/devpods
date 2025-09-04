@@ -42,7 +42,7 @@ spec:
       hostPath:
         path: /
         type: Directory # Make sure it exists.
-    # Docker root volume is in /workspace/docker-root. See docker-daemon.json.
+    # Docker root volume is in emptyDir, implicitly defined in Dockerfile.
     - name: shm
       emptyDir:
         medium: Memory
