@@ -8,5 +8,5 @@ build:
 build/dotfiles: build
 	cd build && git clone --depth=1 https://github.com/charlie0129/dotfiles.git
 
-cuda-12.8.1: build/dotfiles
+%: build/dotfiles
 	docker build --progress=plain -f $@.dockerfile -t $(DOCKER_REPO):$(DOCKER_TAG_PREFIX)$@ .

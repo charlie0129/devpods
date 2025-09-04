@@ -2,7 +2,15 @@
 
 This repo contains images that I use with devpod.sh as development containers.
 
-Image list:
+## What's special?
+
+Using Docker inside DevPod (Docker in Docker) is really hard to setup and easy to get wrong. If you want to use GPUs in Docker in Docker, it's even harder.
+
+This repo provides you a great starting point to achieve Docker in Docker, and optionally with NVIDIA GPUs.
+
+Most configurations are explained in code comments. You can build custom images and modify the configurations as you wish.
+
+## Image list
 
 - `cuda-12.8.1`
 

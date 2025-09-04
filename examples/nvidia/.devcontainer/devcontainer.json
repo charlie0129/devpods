@@ -1,0 +1,5 @@
+{
+    "init":true,
+    "privileged": true,
+    "image": "charlie0129/devpod:ubuntu24.04-cuda12.8.1-docker28.3.3-python3.12-uv0.8.15"
+}
