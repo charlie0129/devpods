@@ -19,8 +19,8 @@ spec:
           memory: "32Gi"
           ephemeral-storage: "100Gi" # Avoid filling node disk.
         limits:
-          cpu: "64"
-          memory: "256Gi"
+          cpu: "16"
+          memory: "64Gi"
           ephemeral-storage: "100Gi" # Avoid filling node disk.
       volumeMounts:
         # Host root mount for accessing host files if needed.
@@ -42,4 +42,4 @@ spec:
     - name: shm
       emptyDir:
         medium: Memory
-        sizeLimit: "16Gi" # Adjust size as needed.
+        sizeLimit: "8Gi" # Adjust size as needed.

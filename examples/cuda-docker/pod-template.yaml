@@ -17,13 +17,13 @@ spec:
       # environment will not work. You should set environment variables in Dockerfile or devcontainer.json.
       resources: # Change resources as needed.
         requests:
-          cpu: "8"
-          memory: "32Gi"
+          cpu: "32"
+          memory: "64Gi"
           nvidia.com/gpu: "8"
           ephemeral-storage: "100Gi" # Avoid filling node disk.
         limits:
           cpu: "64"
-          memory: "256Gi"
+          memory: "384Gi"
           nvidia.com/gpu: "8"
           ephemeral-storage: "100Gi" # Avoid filling node disk.
       volumeMounts:
@@ -46,4 +46,4 @@ spec:
     - name: shm
       emptyDir:
         medium: Memory
-        sizeLimit: "16Gi" # Adjust size as needed.
+        sizeLimit: "32Gi" # Adjust size as needed.
