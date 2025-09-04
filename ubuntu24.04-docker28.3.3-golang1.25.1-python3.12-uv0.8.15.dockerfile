@@ -46,6 +46,7 @@ RUN export GOINST=go${GO_VERSION}.linux-${TARGETPLATFORM}.tar.gz && \
 # No need to set Golang into PATH because it's already in dotfiles.
 
 ############ Configure dotfiles ############
+
 RUN chsh -s /usr/bin/zsh
 
 COPY build/dotfiles /root/dotfiles
@@ -55,9 +56,14 @@ COPY scripts/download-z4h.zsh /tmp/download-z4h.zsh
 # Errors like "can't change option: monitor" can be ignored because there no TTY.
 # Note that you must see this error "[ERROR]: gitstatus failed to initialize." for this script to succeed.
 # Yes, weirdly, you must see an error to succeed. If you don't see it during build, it doesn't work.
-RUN /tmp/download-z4h.zsh
-RUN rm /tmp/download-z4h.zsh
+RUN /tmp/download-z4h.zsh && rm /tmp/download-z4h.zsh
 
+# Note that we won't use /root as the home dir when we are running. Instead
+# the contents of /root are copied to /workspaces/root and /workspaces/root
+# is used as home, so user's changes in home are preserved across restarts.
+
+# Remove history files to avoid overwriting users' history later.
+RUN rm -f /root/.z /root/.*_history
 
 ############ Configure docker ############
 
@@ -111,11 +117,8 @@ VOLUME /var/lib/docker
 ############ Copy common scripts ############
 COPY scripts/ubuntu-use-china-mirror.sh /root/bin/ubuntu-use-china-mirror.sh
 COPY config/htoprc /root/.config/htop/htoprc
-
-# Avoid losing history during workspace restarts.
-ENV HISTFILE=/workspaces/.zsh_history
-ENV ZSHZ_DATA=/workspaces/.z
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # So docker daemon keeps running. devcontainer.json must have overrideCommand=false, otherwise this will not work.
-ENTRYPOINT [ "/usr/local/bin/docker-init", "--", "/usr/local/bin/dockerd" ]
+ENTRYPOINT [ "/usr/local/bin/docker-init", "--", "/usr/local/bin/docker-entrypoint.sh" ]
 CMD [ ]

@@ -6,7 +6,7 @@ build:
 	mkdir -p build
 
 build/dotfiles: build
-	cd build && git clone --depth=1 https://github.com/charlie0129/dotfiles.git
+	cd build && rm -rf dotfiles && git clone --depth=1 https://github.com/charlie0129/dotfiles.git
 
 ubuntu%: build/dotfiles
 	docker build --progress=plain -f $@.dockerfile -t $(DOCKER_REPO):$(DOCKER_TAG_PREFIX)$@ .
