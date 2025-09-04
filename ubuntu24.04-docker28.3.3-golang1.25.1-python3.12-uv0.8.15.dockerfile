@@ -16,7 +16,7 @@ RUN apt-get update
 # Common tools
 RUN apt-get install -y \
     zsh git curl wget locales file iptables \
-    htop vim gnupg \
+    htop vim gnupg numactl \
     sysstat zip unzip ca-certificates \
     python3 python3-venv python3-pip \
     sudo iotop strace screen tmux lsd btop jq zstd proxychains4 \
@@ -24,7 +24,7 @@ RUN apt-get install -y \
 
 # Build tools
 RUN apt-get install -y \
-    build-essential cmake
+    build-essential cmake ninja-build
 
 # Locales
 RUN echo "LC_ALL=en_US.UTF-8" >>/etc/environment && \
@@ -111,6 +111,10 @@ VOLUME /var/lib/docker
 ############ Copy common scripts ############
 COPY scripts/ubuntu-use-china-mirror.sh /root/bin/ubuntu-use-china-mirror.sh
 COPY config/htoprc /root/.config/htop/htoprc
+
+# Avoid losing history during workspace restarts.
+ENV HISTFILE=/workspaces/.zsh_history
+ENV ZSHZ_DATA=/workspaces/.z
 
 # So docker daemon keeps running. devcontainer.json must have overrideCommand=false, otherwise this will not work.
 ENTRYPOINT [ "/usr/local/bin/docker-init", "--", "/usr/local/bin/dockerd" ]
