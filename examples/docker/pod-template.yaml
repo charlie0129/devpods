@@ -1,8 +1,6 @@
 # Add this to:
 #   DevPod -> Provider (Kubernetes) -> Advanced Options -> Pod Manifest Template
 
-# This template is for CPU-only tasks. If you want to use GPUs, use the -nvidia template.
-
 apiVersion: v1
 kind: Pod
 metadata:
@@ -29,34 +27,6 @@ spec:
         - mountPath: /host
           name: host
           readOnly: true # Avoid accidental changes to host. Set to false if you need write access.
-        - mountPath: /certs
-          name: docker-certs
-          readOnly: true
-    # Docker daemon sidecar so that Docker-in-Docker works.
-    - name: docker
-      image: docker:28.3.3-dind-alpine3.22
-      env:
-        - name: DOCKER_TLS_CERTDIR
-          value: /certs
-      args:
-        - --storage-driver=overlay2
-      securityContext:
-        privileged: true # Required for DinD to work.
-        runAsUser: 0
-        runAsGroup: 0
-      resources: # Change resources as needed.
-        requests:
-          cpu: "1"
-          memory: "2Gi"
-          ephemeral-storage: "100Gi"
-        limits:
-          cpu: "8"
-          memory: "16Gi"
-          ephemeral-storage: "100Gi" # Avoid filling node disk.
-      volumeMounts:
-        - mountPath: /certs
-          name: docker-certs
-          readOnly: false
         - mountPath: /var/lib/docker
           name: docker-root
           readOnly: false
@@ -68,12 +38,9 @@ spec:
       hostPath:
         path: /
         type: Directory # Make sure it exists.
-    # Docker client certs volume for Docker-in-Docker.
-    - name: docker-certs
-      emptyDir:
-        medium: Memory
-        sizeLimit: 16Mi
+    # Docker root volume for Docker-in-Docker.
     - name: docker-root
       emptyDir:
         medium: ""
-        sizeLimit: 80Gi
+        sizeLimit: 80Gi # Avoid filling node disk.
+

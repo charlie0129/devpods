@@ -1,5 +1,0 @@
-{
-    "init":true,
-    "privileged": true,
-    "image": "charlie0129/devpod:ubuntu24.04-docker28.3.3-golang1.25.1-python3.12"
-}

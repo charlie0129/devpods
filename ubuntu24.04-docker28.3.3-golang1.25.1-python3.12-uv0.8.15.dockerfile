@@ -1,4 +1,3 @@
-ARG CUDA_VERSION=12.8.1
 ARG UBUNTU_VERSION=24.04
 ARG DOCKER_VERSION=28.3.3
 
@@ -6,7 +5,7 @@ ARG DOCKER_VERSION=28.3.3
 FROM docker:${DOCKER_VERSION}-dind AS dind
 
 # Our base image
-FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu${UBUNTU_VERSION}
+FROM ubuntu:${UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
@@ -27,11 +26,6 @@ RUN apt-get install -y \
 RUN apt-get install -y \
     build-essential cmake
 
-# GPU workload tools
-RUN apt-get install -y \
-    libibverbs-dev rdma-core infiniband-diags perftest \
-    nvtop
-
 # Locales
 RUN echo "LC_ALL=en_US.UTF-8" >>/etc/environment && \
     echo "en_US.UTF-8 UTF-8" >>/etc/locale.gen && \
@@ -42,8 +36,16 @@ RUN echo "LC_ALL=en_US.UTF-8" >>/etc/environment && \
 ARG UV_VERSION=0.8.15
 RUN curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh
 
-############ Configure dotfiles ############
+# Install Golang
+ARG GO_VERSION=1.25.1
+ARG TARGETPLATFORM=amd64
+RUN export GOINST=go${GO_VERSION}.linux-${TARGETPLATFORM}.tar.gz && \
+    wget https://go.dev/dl/${GOINST} && \
+    tar -C /usr/local -xzf ${GOINST} && \
+    rm -f ${GOINST}
+# No need to set Golang into PATH because it's already in dotfiles.
 
+############ Configure dotfiles ############
 RUN chsh -s /usr/bin/zsh
 
 COPY build/dotfiles /root/dotfiles
@@ -54,6 +56,7 @@ COPY scripts/download-z4h.zsh /root/download-z4h.zsh
 # Note that you must see this error "[ERROR]: gitstatus failed to initialize." for this script to succeed.
 # Yes, weirdly, you must see an error to succeed. If you don't see it during build, it doesn't work.
 RUN /root/download-z4h.zsh
+
 
 ############ Configure docker ############
 
@@ -94,24 +97,8 @@ RUN set -eux; \
     docker-compose version && \
     ln -s /usr/local/bin/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
 
-# Install NVIDIA Container Toolkit
-ARG NVIDIA_CONTAINER_TOOLKIT_VERSION=1.17.8-1
-RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg && \
-    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-RUN apt-get update
-RUN apt-get install -y \
-      nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      libnvidia-container-tools=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION}
-
 # Default Docker daemon config
 COPY config/docker-daemon.json /etc/docker/daemon.json
-
-# Configure NVIDIA Container Toolkit
-RUN nvidia-ctk runtime configure --runtime=docker
 
 COPY --from=dind /usr/local/bin/modprobe /usr/local/bin/modprobe
 # Tini (useful if this container is run without a init)
