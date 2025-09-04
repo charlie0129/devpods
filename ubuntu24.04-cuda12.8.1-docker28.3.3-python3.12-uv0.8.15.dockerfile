@@ -49,11 +49,12 @@ RUN chsh -s /usr/bin/zsh
 COPY build/dotfiles /root/dotfiles
 RUN /root/dotfiles/bootstrap.sh -f
 
-COPY scripts/download-z4h.zsh /root/download-z4h.zsh
+COPY scripts/download-z4h.zsh /tmp/download-z4h.zsh
 # Errors like "can't change option: monitor" can be ignored because there no TTY.
 # Note that you must see this error "[ERROR]: gitstatus failed to initialize." for this script to succeed.
 # Yes, weirdly, you must see an error to succeed. If you don't see it during build, it doesn't work.
-RUN /root/download-z4h.zsh
+RUN /tmp/download-z4h.zsh
+RUN rm /tmp/download-z4h.zsh
 
 ############ Configure docker ############
 
