@@ -22,10 +22,11 @@ Examples can be found in `examples/`.
 ### How to use examples?
 
 1. Download and install DevPods client from devpod.sh
-2. Add a Kubernetes provider. Provide your kubeconfig as usual. You don't need to change any setting now.
+2. Add a Kubernetes provider. Provide your kubeconfig as usual.
 3. Set `Advanced Options -> Pod Manifest Template` to the absolute path of `<this-repo>/examples/<example-name>/pod-template.yaml`
-4. Create a Workspace. Set `Workspace Source` to `Folder` with a path of `<this-repo>/examples/<example-name>`. This step makes use of the `.devcontainer/` configuration directory. If you want to use your own directory, just copy `.devcontainer/` to your directory.
-5. Wait for the DevPod to start. Note that the images used are large, it may take a while.
+4. Set `Optional -> Workspace Volume Mount` to `/workspaces` because we want to preserve shell history, Docker data and etc.
+5. Create a Workspace. Set `Workspace Source` to `Folder` with a path of `<this-repo>/examples/<example-name>`. This step makes use of the `.devcontainer/` configuration directory. If you want to use your own directory, just copy `.devcontainer/` to your directory.
+6. Wait for the DevPod to start. Note that the images used are large, it may take a while.
 
 All examples are thoroughly commented so go ahead and read the files in them, change any settings as needed. If you changed settings, you will need to create a new workspace to see the effect.
 

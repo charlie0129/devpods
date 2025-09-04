@@ -1,6 +1,7 @@
 {
   "live-restore": true,
   "experimental": true,
+  "data-root": "/workspaces/docker-root",
   "log-opts": {
     "max-size": "2m"
   }

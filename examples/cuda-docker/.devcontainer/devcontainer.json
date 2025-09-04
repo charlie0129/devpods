@@ -2,5 +2,9 @@
     "init": true, // Avoid leaving zombie processes.
     "privileged": true, // Docker in Docker requires privileged mode, otherwise use sysbox.
     "overrideCommand": false, // Avoid messing with our container command. Docker daemon won't start if this is true (default).
+    "remoteEnv": {
+        "HISTFILE": "/workspaces/.zsh_history", // Avoid losing zsh history during workspace restarts.
+        "ZSHZ_DATA": "/workspaces/.z" // Avoid losing cd history during workspace restarts.
+    },
     "image": "charlie0129/devpod:ubuntu24.04-cuda12.8.1-docker28.3.3-python3.12-uv0.8.15"
 }

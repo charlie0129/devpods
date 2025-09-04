@@ -31,9 +31,6 @@ spec:
         - mountPath: /host
           name: host
           readOnly: true # Avoid accidental changes to host. Set to false if you need write access.
-        - mountPath: /var/lib/docker
-          name: docker-root
-          readOnly: false
   volumes:
     # Mount the host's root directory to /host in the pod.
     # This is useful if you want to access files on the host.
@@ -42,9 +39,4 @@ spec:
       hostPath:
         path: /
         type: Directory # Make sure it exists.
-    # Docker root volume for Docker-in-Docker.
-    - name: docker-root
-      emptyDir:
-        medium: ""
-        sizeLimit: 80Gi # Avoid filling node disk.
-
+    # Docker root volume is in /workspace/docker-root. See docker-daemon.json.
