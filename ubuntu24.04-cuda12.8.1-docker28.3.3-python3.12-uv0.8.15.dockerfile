@@ -18,16 +18,33 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     yes | unminimize && \
     \
     apt-get install -y \
-        zsh git curl wget locales file iptables man man-db \
+        zsh git git-lfs curl wget locales file iptables man man-db \
         htop vim gnupg numactl traceroute telnet apache2 \
-        sysstat zip unzip ca-certificates lsof ncdu \
+        sysstat zip unzip ca-certificates lsof ncdu less \
         python3 python3-venv python3-pip \
         sudo iotop strace screen tmux lsd btop jq zstd proxychains4 \
         rsync shellcheck socat tree openssh-server aria2 \
         iperf iperf3 net-tools lshw pciutils usbutils ethtool \
         nmap bind9-dnsutils bind9-utils iputils-ping iproute2 \
+        software-properties-common netcat-openbsd ffmpeg \
+        kmod devscripts debhelper fakeroot dkms check dmidecode \
+        fio wrk \
         \
-        build-essential cmake ninja-build meson \
+        build-essential automake cmake ninja-build meson ccache gdb \
+        \
+        libsm6 libxext6 libgl1 python3-dev libpython3-dev \
+        libopenmpi-dev libnuma1 libnuma-dev \
+        libibverbs-dev libibverbs1 libibumad3 \
+        librdmacm1 libnl-3-200 libnl-route-3-200 libnl-route-3-dev libnl-3-dev \
+        ibverbs-providers infiniband-diags perftest \
+        libgtest-dev libjsoncpp-dev libunwind-dev \
+        libboost-all-dev libssl-dev \
+        libgrpc-dev libgrpc++-dev libprotobuf-dev protobuf-compiler-grpc \
+        pybind11-dev \
+        libhiredis-dev libcurl4-openssl-dev \
+        libczmq4 libczmq-dev \
+        libfabric-dev \
+        patchelf libsubunit0 libsubunit-dev \
         \
         libibverbs-dev rdma-core infiniband-diags perftest nvtop \
         && \
@@ -118,12 +135,14 @@ RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearm
     curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
     tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-RUN apt-get update
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
       nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       libnvidia-container-tools=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION}
+      libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+    \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Default Docker daemon config
 COPY config/docker-daemon.json /etc/docker/daemon.json
