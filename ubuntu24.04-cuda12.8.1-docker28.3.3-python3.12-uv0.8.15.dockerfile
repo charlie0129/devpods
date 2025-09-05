@@ -12,13 +12,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # I build image in Azure so use Azure mirrors.
 RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
+    sed -i 's@//security.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
+    rm /etc/apt/sources.list.d/cuda.list && \
     apt-get update && \
     \
-    echo "To read man pages, we need to unminimize first." && \
-    yes | unminimize && \
-    \
     apt-get install -y \
-        zsh git git-lfs curl wget locales file iptables man man-db \
+        zsh git git-lfs curl wget locales file iptables \
         htop vim gnupg numactl traceroute telnet apache2 \
         sysstat zip unzip ca-certificates lsof ncdu less \
         python3 python3-venv python3-pip \
@@ -135,11 +134,13 @@ RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearm
     curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
     tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y \
       nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       libnvidia-container-tools=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+    && \
     \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

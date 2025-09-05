@@ -11,13 +11,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # I build image in Azure so use Azure mirrors.
 RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
+    sed -i 's@//security.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
     apt-get update && \
     \
-    echo "To read man pages, we need to unminimize first." && \
-    yes | unminimize && \
-    \
     apt-get install -y \
-        zsh git git-lfs curl wget locales file iptables man man-db \
+        zsh git git-lfs curl wget locales file iptables \
         htop vim gnupg numactl traceroute telnet apache2 \
         sysstat zip unzip ca-certificates lsof ncdu less \
         python3 python3-venv python3-pip \
