@@ -11,16 +11,21 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 # Don't remove lists because we may need it later during development.
 
+# To read man pages, we need to unminimize first.
+RUN yes | unminimize
+
 ############ Configure dev environments ############
 
 # Common tools
 RUN apt-get install -y \
-    zsh git curl wget locales file iptables \
-    htop vim gnupg numactl \
+    zsh git curl wget locales file iptables man man-db \
+    htop vim gnupg numactl traceroute telnet \
     sysstat zip unzip ca-certificates \
     python3 python3-venv python3-pip \
     sudo iotop strace screen tmux lsd btop jq zstd proxychains4 \
-    rsync shellcheck socat tree openssh-server
+    rsync shellcheck socat tree openssh-server aria2 \
+    iperf iperf3 net-tools lshw pciutils usbutils ethtool \
+    nmap bind9-dnsutils bind9-utils iputils-ping iproute2
 
 # Build tools
 RUN apt-get install -y \
