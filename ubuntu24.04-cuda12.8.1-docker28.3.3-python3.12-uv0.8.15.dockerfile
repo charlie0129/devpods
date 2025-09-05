@@ -9,33 +9,34 @@ FROM docker:${DOCKER_VERSION}-dind AS dind
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu${UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update
-# Don't remove lists because we may need it later during development.
 
-# To read man pages, we need to unminimize first.
-RUN yes | unminimize
+# I build image in Azure so use Azure mirrors.
+RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
+    apt-get update && \
+    \
+    echo "To read man pages, we need to unminimize first." && \
+    yes | unminimize && \
+    \
+    apt-get install -y \
+        zsh git curl wget locales file iptables man man-db \
+        htop vim gnupg numactl traceroute telnet apache2 \
+        sysstat zip unzip ca-certificates lsof ncdu \
+        python3 python3-venv python3-pip \
+        sudo iotop strace screen tmux lsd btop jq zstd proxychains4 \
+        rsync shellcheck socat tree openssh-server aria2 \
+        iperf iperf3 net-tools lshw pciutils usbutils ethtool \
+        nmap bind9-dnsutils bind9-utils iputils-ping iproute2 \
+        \
+        build-essential cmake ninja-build meson \
+        \
+        libibverbs-dev rdma-core infiniband-diags perftest nvtop \
+        && \
+    \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    sed -i 's@//.*archive.ubuntu.com@//archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources
 
 ############ Configure dev environments ############
-
-# Common tools
-RUN apt-get install -y \
-    zsh git curl wget locales file iptables man man-db \
-    htop vim gnupg numactl traceroute telnet \
-    sysstat zip unzip ca-certificates \
-    python3 python3-venv python3-pip \
-    sudo iotop strace screen tmux lsd btop jq zstd proxychains4 \
-    rsync shellcheck socat tree openssh-server aria2 \
-    iperf iperf3 net-tools lshw pciutils usbutils ethtool \
-    nmap bind9-dnsutils bind9-utils iputils-ping iproute2
-
-# Build tools
-RUN apt-get install -y \
-    build-essential cmake ninja-build
-
-# GPU workload tools
-RUN apt-get install -y \
-    libibverbs-dev rdma-core infiniband-diags perftest \
-    nvtop
 
 # Nsight Systems
 RUN curl -fsSL -o nsys.deb https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2025_5/NsightSystems-linux-cli-public-2025.5.1.121-3638078.deb && \
