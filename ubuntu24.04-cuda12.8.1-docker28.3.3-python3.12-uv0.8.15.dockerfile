@@ -38,7 +38,7 @@ RUN apt-get install -y \
     nvtop
 
 # Nsight Systems
-RUN wget -O nsys.deb https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2025_5/NsightSystems-linux-cli-public-2025.5.1.121-3638078.deb && \
+RUN curl -fsSL -o nsys.deb https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2025_5/NsightSystems-linux-cli-public-2025.5.1.121-3638078.deb && \
     dpkg -i nsys.deb && \
     rm nsys.deb
 
@@ -93,10 +93,10 @@ RUN set -eux; \
         aarch64) dockerArch='aarch64' ; buildx_arch='linux-arm64' ;; \
         *) echo >&2 "error: unsupported architecture ($arch)"; exit 1 ;; \
     esac && \
-    wget -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${dockerArch}/docker-${DOCKER_VERSION}.tgz" && \
+    curl -fsSL -o docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${dockerArch}/docker-${DOCKER_VERSION}.tgz" && \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz && \
-    wget -O docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.${buildx_arch}" && \
+    curl -fsSL -o docker-buildx "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.${buildx_arch}" && \
     mkdir -p /usr/local/lib/docker/cli-plugins && \
     chmod +x docker-buildx && \
     mv docker-buildx /usr/local/lib/docker/cli-plugins/docker-buildx && \
