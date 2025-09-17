@@ -9,7 +9,6 @@ FROM docker:${DOCKER_VERSION}-dind AS dind
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu${UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV container=docker
 
 # I build image in Azure so use Azure mirrors.
 RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
@@ -163,6 +162,7 @@ RUN nvidia-ctk runtime configure --runtime=docker
 # Copy systemd service files
 COPY config/docker.service /etc/systemd/system/docker.service
 COPY config/docker.socket /etc/systemd/system/docker.socket
+COPY config/container-init.service /etc/systemd/system/container-init.service
 
 # Create docker group
 RUN groupadd -f docker
@@ -174,31 +174,13 @@ COPY --from=dind /usr/local/bin/docker-init /usr/local/bin/docker-init
 # So we can use overlay2
 VOLUME /var/lib/docker
 
-# Mount cgroup for systemd
-VOLUME ["/sys/fs/cgroup"]
-
 ############ Copy common scripts ############
 COPY scripts/ubuntu-use-china-mirror.sh /root/bin/ubuntu-use-china-mirror.sh
 COPY config/htoprc /root/.config/htop/htoprc
 
-# Create a systemd service to run our initialization
+# Copy initialization script
 COPY scripts/container-init.sh /usr/local/bin/container-init.sh
 RUN chmod +x /usr/local/bin/container-init.sh
-
-# Create a oneshot service for initialization
-RUN echo '[Unit]\n\
-Description=Container Initialization\n\
-DefaultDependencies=no\n\
-After=sysinit.target local-fs.target\n\
-Before=multi-user.target docker.service\n\
-\n\
-[Service]\n\
-Type=oneshot\n\
-ExecStart=/usr/local/bin/container-init.sh\n\
-RemainAfterExit=yes\n\
-\n\
-[Install]\n\
-WantedBy=multi-user.target' > /etc/systemd/system/container-init.service
 
 # Enable the initialization service
 RUN systemctl enable container-init.service
