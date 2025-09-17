@@ -15,6 +15,7 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     apt-get update && \
     \
     apt-get install -y \
+        systemd systemd-sysv \
         zsh git git-lfs curl wget locales file iptables \
         htop vim gnupg numactl traceroute telnet apache2 \
         sysstat zip unzip ca-certificates lsof ncdu less \
@@ -50,6 +51,12 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     rm -rf /var/lib/apt/lists/* && \
     sed -i 's@//.*archive.ubuntu.com@//archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources
 
+# Configure systemd for container use
+RUN systemctl set-default multi-user.target && \
+    systemctl mask dev-hugepages.mount sys-fs-fuse-connections.mount && \
+    systemctl mask systemd-logind.service getty.target console-getty.service && \
+    systemctl mask systemd-udev-trigger.service systemd-udevd.service && \
+    systemctl mask systemd-modules-load.service kmod-static-nodes.service
 
 ############ Configure dev environments ############
 
@@ -135,6 +142,14 @@ RUN set -eux; \
 # Default Docker daemon config
 COPY config/docker-daemon.json /etc/docker/daemon.json
 
+# Copy systemd service files
+COPY config/docker.service /etc/systemd/system/docker.service
+COPY config/docker.socket /etc/systemd/system/docker.socket
+COPY config/container-init.service /etc/systemd/system/container-init.service
+
+# Create docker group
+RUN groupadd -f docker
+
 COPY --from=dind /usr/local/bin/modprobe /usr/local/bin/modprobe
 # Tini (useful if this container is run without a init)
 COPY --from=dind /usr/local/bin/docker-init /usr/local/bin/docker-init
@@ -145,8 +160,14 @@ VOLUME /var/lib/docker
 ############ Copy common scripts ############
 COPY scripts/ubuntu-use-china-mirror.sh /root/bin/ubuntu-use-china-mirror.sh
 COPY config/htoprc /root/.config/htop/htoprc
-COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# So docker daemon keeps running. devcontainer.json must have overrideCommand=false, otherwise this will not work.
-ENTRYPOINT [ "/usr/local/bin/docker-init", "--", "/usr/local/bin/docker-entrypoint.sh" ]
+# Copy initialization script
+COPY scripts/container-init.sh /usr/local/bin/container-init.sh
+RUN chmod +x /usr/local/bin/container-init.sh
+
+# Enable the initialization service
+RUN systemctl enable container-init.service
+
+# Use systemd directly as PID 1
+ENTRYPOINT [ "/usr/sbin/init" ]
 CMD [ ]

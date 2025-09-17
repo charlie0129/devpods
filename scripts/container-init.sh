@@ -1,4 +1,7 @@
 #!/bin/bash
+# Container initialization script
+# This script prepares the container environment before systemd services start
+# It does NOT start Docker - that's handled by systemd services
 
 set -o errexit
 set -o pipefail
@@ -41,5 +44,14 @@ echo "Allowing * as safe git directory"
 git config --global --unset-all safe.directory || true # May fail with empty git config
 git config --global --add safe.directory '*'
 
-# Start docker
-/usr/local/bin/dockerd
+# Ensure Docker config directory exists
+mkdir -p /workspaces/root/.docker
+
+if [[ -f /workspaces/root/.docker/daemon.json ]]; then
+    echo "Using custom Docker daemon config from /workspaces/root/.docker/daemon.json"
+else
+    echo "Copy default Docker daemon config from /etc/docker/daemon.json to /workspaces/root/.docker/daemon.json"
+    cp -a /etc/docker/daemon.json /workspaces/root/.docker/daemon.json
+fi
+
+echo "Container initialization completed. Services will be managed by systemd."
