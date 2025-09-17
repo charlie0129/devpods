@@ -9,6 +9,7 @@ FROM docker:${DOCKER_VERSION}-dind AS dind
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu${UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV container=docker
 
 # I build image in Azure so use Azure mirrors.
 RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
@@ -17,6 +18,7 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     apt-get update && \
     \
     apt-get install -y \
+        systemd systemd-sysv \
         zsh git git-lfs curl wget locales file iptables \
         htop vim gnupg numactl traceroute telnet apache2 \
         sysstat zip unzip ca-certificates lsof ncdu less \
@@ -51,6 +53,13 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     sed -i 's@//.*archive.ubuntu.com@//archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources
+
+# Configure systemd for container use
+RUN systemctl set-default multi-user.target && \
+    systemctl mask dev-hugepages.mount sys-fs-fuse-connections.mount && \
+    systemctl mask systemd-logind.service getty.target console-getty.service && \
+    systemctl mask systemd-udev-trigger.service systemd-udevd.service && \
+    systemctl mask systemd-modules-load.service kmod-static-nodes.service
 
 ############ Configure dev environments ############
 
@@ -151,6 +160,13 @@ COPY config/docker-daemon.json /etc/docker/daemon.json
 # Configure NVIDIA Container Toolkit
 RUN nvidia-ctk runtime configure --runtime=docker
 
+# Copy systemd service files
+COPY config/docker.service /etc/systemd/system/docker.service
+COPY config/docker.socket /etc/systemd/system/docker.socket
+
+# Create docker group
+RUN groupadd -f docker
+
 COPY --from=dind /usr/local/bin/modprobe /usr/local/bin/modprobe
 # Tini (useful if this container is run without a init)
 COPY --from=dind /usr/local/bin/docker-init /usr/local/bin/docker-init
@@ -158,11 +174,35 @@ COPY --from=dind /usr/local/bin/docker-init /usr/local/bin/docker-init
 # So we can use overlay2
 VOLUME /var/lib/docker
 
+# Mount cgroup for systemd
+VOLUME ["/sys/fs/cgroup"]
+
 ############ Copy common scripts ############
 COPY scripts/ubuntu-use-china-mirror.sh /root/bin/ubuntu-use-china-mirror.sh
 COPY config/htoprc /root/.config/htop/htoprc
-COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# So docker daemon keeps running. devcontainer.json must have overrideCommand=false, otherwise this will not work.
-ENTRYPOINT [ "/usr/local/bin/docker-init", "--", "/usr/local/bin/docker-entrypoint.sh" ]
+# Create a systemd service to run our initialization
+COPY scripts/container-init.sh /usr/local/bin/container-init.sh
+RUN chmod +x /usr/local/bin/container-init.sh
+
+# Create a oneshot service for initialization
+RUN echo '[Unit]\n\
+Description=Container Initialization\n\
+DefaultDependencies=no\n\
+After=sysinit.target local-fs.target\n\
+Before=multi-user.target docker.service\n\
+\n\
+[Service]\n\
+Type=oneshot\n\
+ExecStart=/usr/local/bin/container-init.sh\n\
+RemainAfterExit=yes\n\
+\n\
+[Install]\n\
+WantedBy=multi-user.target' > /etc/systemd/system/container-init.service
+
+# Enable the initialization service
+RUN systemctl enable container-init.service
+
+# Use systemd directly as PID 1
+ENTRYPOINT [ "/usr/sbin/init" ]
 CMD [ ]
