@@ -56,7 +56,7 @@ if [[ -f /workspaces/root/.docker/daemon.json ]]; then
     echo "Using custom Docker daemon config from /workspaces/root/.docker/daemon.json"
 else
     echo "Copy default Docker daemon config from /etc/docker/daemon.json to /workspaces/root/.docker/daemon.json"
-    cp -a /etc/docker/daemon.json /workspaces/root/.docker/daemon.json
+    cp /etc/docker/daemon.json /workspaces/root/.docker/daemon.json
 fi
 
 echo "Container initialization completed. Services will be managed by systemd."
