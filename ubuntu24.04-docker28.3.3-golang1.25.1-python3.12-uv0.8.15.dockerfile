@@ -146,6 +146,7 @@ COPY config/docker-daemon.json /etc/docker/daemon.json
 # Copy systemd service files
 COPY config/docker.service /etc/systemd/system/docker.service
 COPY config/docker.socket /etc/systemd/system/docker.socket
+RUN chmod 600 /etc/systemd/system/docker.service /etc/systemd/system/docker.socket&& systemctl enable docker.service
 
 # Create docker group
 RUN groupadd -f docker
@@ -166,7 +167,7 @@ RUN chmod +x /usr/local/bin/container-init.sh
 
 # Enable the initialization service
 COPY config/container-init.service /etc/systemd/system/container-init.service
-RUN systemctl enable container-init.service
+RUN chmod 600 /etc/systemd/system/container-init.service && systemctl enable container-init.service
 
 # Use systemd directly as PID 1
 ENTRYPOINT [ "/usr/sbin/init" ]
