@@ -169,8 +169,8 @@ COPY --from=dind /usr/local/bin/docker-init /usr/local/bin/tini
 
 # Copy initialization scripts
 COPY scripts/prepare-root.sh /usr/local/bin/prepare-root.sh
-COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
+# Supervisord config
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Use a init
