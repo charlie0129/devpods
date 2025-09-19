@@ -23,14 +23,19 @@ if [[ -d "/workspaces" ]]; then
     install -o root -g root -m "$(stat -c '%a' /etc/passwd)" /etc/passwd.new /etc/passwd
     rm -f /etc/passwd.new
 
-    head -1 /etc/passwd 
+    head -1 /etc/passwd
     
-    # Copy home
-    cp -a "/root/." "/workspaces/root" || {
-        # Fallback on NFS PVC root squash.
-        echo "Your PVC does not allow chown. Using regular cp..."
-        cp -dfR "/root/." "/workspaces/root"
-    }
+    # Copy home (if not present)
+    if [[ ! -d "/workspaces/root/dotfiles" ]]; then
+        echo "Copying /root to /workspaces/root..."
+        cp -a "/root/." "/workspaces/root" || {
+            # Fallback on NFS PVC root squash.
+            echo "Your PVC does not allow chown. Using regular cp..."
+            cp -dfR "/root/." "/workspaces/root"
+        }
+    else
+        echo "/workspaces/root already exists. Skipping copy."
+    fi
 
     export HOME=/workspaces/root
     # Bootstrap dotfiles again to fix home dir changes.

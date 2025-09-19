@@ -58,7 +58,8 @@ RUN systemctl set-default multi-user.target && \
     systemctl mask dev-hugepages.mount sys-fs-fuse-connections.mount && \
     systemctl mask systemd-logind.service getty.target console-getty.service && \
     systemctl mask systemd-udev-trigger.service systemd-udevd.service && \
-    systemctl mask systemd-modules-load.service kmod-static-nodes.service
+    systemctl mask systemd-modules-load.service kmod-static-nodes.service && \
+    systemctl mask systemd-timesyncd.service systemd-resolved.service unattended-upgrades.service
 
 ############ Configure dev environments ############
 
@@ -162,14 +163,12 @@ RUN nvidia-ctk runtime configure --runtime=docker
 # Copy systemd service files
 COPY config/docker.service /etc/systemd/system/docker.service
 COPY config/docker.socket /etc/systemd/system/docker.socket
-COPY config/container-init.service /etc/systemd/system/container-init.service
 
 # Create docker group
 RUN groupadd -f docker
 
+# Dummy modprobe so Docker can work
 COPY --from=dind /usr/local/bin/modprobe /usr/local/bin/modprobe
-# Tini (useful if this container is run without a init)
-COPY --from=dind /usr/local/bin/docker-init /usr/local/bin/docker-init
 
 # So we can use overlay2
 VOLUME /var/lib/docker
@@ -183,6 +182,7 @@ COPY scripts/container-init.sh /usr/local/bin/container-init.sh
 RUN chmod +x /usr/local/bin/container-init.sh
 
 # Enable the initialization service
+COPY config/container-init.service /etc/systemd/system/container-init.service
 RUN systemctl enable container-init.service
 
 # Use systemd directly as PID 1
