@@ -17,7 +17,6 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     apt-get update && \
     \
     apt-get install -y \
-        systemd systemd-sysv \
         zsh git git-lfs curl wget locales file iptables \
         htop vim gnupg numactl traceroute telnet apache2 \
         sysstat zip unzip ca-certificates lsof ncdu less \
@@ -28,7 +27,7 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
         nmap bind9-dnsutils bind9-utils iputils-ping iproute2 \
         software-properties-common netcat-openbsd ffmpeg \
         kmod devscripts debhelper fakeroot dkms check dmidecode \
-        fio wrk \
+        fio wrk supervisor \
         \
         build-essential automake cmake ninja-build meson ccache gdb \
         \
@@ -52,14 +51,6 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     sed -i 's@//.*archive.ubuntu.com@//archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources
-
-# Configure systemd for container use
-RUN systemctl set-default multi-user.target && \
-    systemctl mask dev-hugepages.mount sys-fs-fuse-connections.mount && \
-    systemctl mask systemd-logind.service getty.target console-getty.service && \
-    systemctl mask systemd-udev-trigger.service systemd-udevd.service && \
-    systemctl mask systemd-modules-load.service kmod-static-nodes.service && \
-    systemctl mask systemd-timesyncd.service systemd-resolved.service unattended-upgrades.service
 
 ############ Configure dev environments ############
 
@@ -160,11 +151,6 @@ COPY config/docker-daemon.json /etc/docker/daemon.json
 # Configure NVIDIA Container Toolkit
 RUN nvidia-ctk runtime configure --runtime=docker
 
-# Copy systemd service files
-COPY config/docker.service /etc/systemd/system/docker.service
-COPY config/docker.socket /etc/systemd/system/docker.socket
-RUN chmod 600 /etc/systemd/system/docker.service /etc/systemd/system/docker.socket&& systemctl enable docker.service
-
 # Create docker group
 RUN groupadd -f docker
 
@@ -178,14 +164,15 @@ VOLUME /var/lib/docker
 COPY scripts/ubuntu-use-china-mirror.sh /root/bin/ubuntu-use-china-mirror.sh
 COPY config/htoprc /root/.config/htop/htoprc
 
-# Copy initialization script
-COPY scripts/container-init.sh /usr/local/bin/container-init.sh
-RUN chmod +x /usr/local/bin/container-init.sh
+# Tini (useful if this container is run without a init)
+COPY --from=dind /usr/local/bin/docker-init /usr/local/bin/tini
 
-# Enable the initialization service
-COPY config/container-init.service /etc/systemd/system/container-init.service
-RUN chmod 600 /etc/systemd/system/container-init.service && systemctl enable container-init.service
+# Copy initialization scripts
+COPY scripts/prepare-root.sh /usr/local/bin/prepare-root.sh
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# Use systemd directly as PID 1
-ENTRYPOINT [ "/usr/sbin/init" ]
+COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Use a init
+ENTRYPOINT [ "/usr/local/bin/tini", "-s", "-g", "sh", "--", "-c", "/usr/local/bin/prepare-root.sh && exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf" ]
 CMD [ ]

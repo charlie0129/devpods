@@ -1,7 +1,4 @@
 #!/bin/bash
-# Container initialization script
-# This script prepares the container environment before systemd services start
-# It does NOT start Docker - that's handled by systemd services
 
 set -o errexit
 set -o pipefail
@@ -58,5 +55,3 @@ else
     echo "Copy default Docker daemon config from /etc/docker/daemon.json to /workspaces/root/.docker/daemon.json"
     cp /etc/docker/daemon.json /workspaces/root/.docker/daemon.json
 fi
-
-echo "Container initialization completed. Services will be managed by systemd."
