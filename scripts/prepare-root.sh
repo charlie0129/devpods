@@ -27,10 +27,10 @@ if [[ -d "/workspaces" ]]; then
     # Copy home (if not present)
     if [[ ! -d "/workspaces/root/dotfiles" ]]; then
         info "Copying homedir" from /root to /workspaces/root
-        cp -a "/root/." "/workspaces/root" || {
+        cp -auf "/root/." "/workspaces/root" || {
             # Fallback on NFS PVC root squash.
             warn "Your PVC does not allow chown. Using regular cp instead."
-            cp -dfR "/root/." "/workspaces/root"
+            cp -dufR "/root/." "/workspaces/root"
         }
     else
         info "/workspaces/root already exists. Skipping copy."
