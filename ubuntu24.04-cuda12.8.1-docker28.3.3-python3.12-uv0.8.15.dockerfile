@@ -29,7 +29,7 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
         kmod devscripts debhelper fakeroot dkms check dmidecode \
         fio wrk supervisor \
         \
-        build-essential automake cmake ninja-build meson ccache gdb \
+        build-essential automake ninja-build meson ccache gdb \
         \
         libsm6 libxext6 libgl1 python3-dev libpython3-dev \
         libopenmpi-dev libnuma1 libnuma-dev \
@@ -51,6 +51,23 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     sed -i 's@//.*archive.ubuntu.com@//archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources
+
+# Install newer versions of cmake (versions in apt are too old)
+RUN CMAKE_VERSION=4.1.1 \
+    && ARCH=$(uname -m) \
+    && CMAKE_INSTALLER="cmake-${CMAKE_VERSION}-linux-${ARCH}" \
+    && wget "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/${CMAKE_INSTALLER}.tar.gz" \
+    && tar -xzf "${CMAKE_INSTALLER}.tar.gz" \
+    && cp -r "${CMAKE_INSTALLER}/bin/"* /usr/local/bin/ \
+    && cp -r "${CMAKE_INSTALLER}/share/"* /usr/local/share/ \
+    && rm -rf "${CMAKE_INSTALLER}" "${CMAKE_INSTALLER}.tar.gz"
+
+ARG SINGBOX_VERSION=1.12.8
+RUN export INSTALLER=sing-box-${SINGBOX_VERSION}-linux-$(dpkg --print-architecture) && \
+    curl -fsSL https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/$INSTALLER.tar.gz -o sing-box.tar.gz && \
+    tar zxf sing-box.tar.gz && \
+    mv $INSTALLER/sing-box /usr/local/bin && \
+    rm -rf sing-box*
 
 ############ Configure dev environments ############
 
