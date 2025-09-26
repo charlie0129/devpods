@@ -48,6 +48,9 @@ info "Allowing * as safe git directory"
 git config --global --unset-all safe.directory || true # May fail with empty git config
 git config --global --add safe.directory '*'
 
+info "Using plain text credential helper for git"
+git config --global credential.helper store
+
 # Ensure Docker config directory exists
 mkdir -p /workspaces/root/.docker
 
