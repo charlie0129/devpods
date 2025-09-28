@@ -27,6 +27,7 @@ spec:
         - mountPath: /host
           name: host
           readOnly: true # Avoid accidental changes to host. Set to false if you need write access.
+          mountPropagation: HostToContainer # Allows the container to see changes made on the host.
         # Shared memory volume for applications that need it, e.g., inference engines.
         - mountPath: /dev/shm
           name: shm
