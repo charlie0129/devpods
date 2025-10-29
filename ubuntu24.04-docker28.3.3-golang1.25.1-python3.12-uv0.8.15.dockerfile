@@ -25,7 +25,7 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
         nmap bind9-dnsutils bind9-utils iputils-ping iproute2 \
         software-properties-common netcat-openbsd ffmpeg \
         kmod devscripts debhelper fakeroot dkms check dmidecode \
-        fio wrk supervisor shadowsocks-libev \
+        fio wrk supervisor shadowsocks-libev smartmontools \
         \
         build-essential automake ninja-build meson ccache gdb \
         \
