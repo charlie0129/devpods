@@ -33,7 +33,8 @@ if [[ -d "/workspaces" ]]; then
             cp -dufR "/root/." "/workspaces/root"
         }
     else
-        info "/workspaces/root already exists. Skipping copy."
+        # User may already modified dotfiles, so we skip copying to avoid overwriting user's changes.
+        info "/workspaces/root/dotfiles already exists. Skipping copy."
     fi
 
     export HOME=/workspaces/root
