@@ -68,8 +68,27 @@ RUN export INSTALLER=sing-box-${SINGBOX_VERSION}-linux-$(dpkg --print-architectu
     mv $INSTALLER/sing-box /usr/local/bin && \
     rm -rf sing-box*
 
-############ Configure dev environments ############
+############ Configure dotfiles ############
 
+RUN chsh -s /usr/bin/zsh
+
+COPY build/dotfiles /root/dotfiles
+RUN /root/dotfiles/bootstrap.sh -f
+
+COPY scripts/download-z4h.zsh /tmp/download-z4h.zsh
+# Errors like "can't change option: monitor" can be ignored because there no TTY.
+# Note that you must see this error "[ERROR]: gitstatus failed to initialize." for this script to succeed.
+# Yes, weirdly, you must see an error to succeed. If you don't see it during build, it doesn't work.
+RUN /tmp/download-z4h.zsh && rm /tmp/download-z4h.zsh
+
+# Note that we won't use /root as the home dir when we are running. Instead
+# the contents of /root are copied to /workspaces/root and /workspaces/root
+# is used as home, so user's changes in home are preserved across restarts.
+
+# Remove history files to avoid overwriting users' history later.
+RUN rm -f /root/.z /root/.*_history
+
+############ Configure dev environments ############
 
 # Locales
 RUN echo "LC_ALL=en_US.UTF-8" >/etc/environment && \
@@ -102,27 +121,8 @@ RUN echo "# BEGIN FNM">>~/dotfiles/env/custom.sh && \
 # install node
 RUN fnm install v24.11.1
 
-############ Configure dotfiles ############
-
-RUN chsh -s /usr/bin/zsh
-
-COPY build/dotfiles /root/dotfiles
-RUN /root/dotfiles/bootstrap.sh -f
-
-COPY scripts/download-z4h.zsh /tmp/download-z4h.zsh
-# Errors like "can't change option: monitor" can be ignored because there no TTY.
-# Note that you must see this error "[ERROR]: gitstatus failed to initialize." for this script to succeed.
-# Yes, weirdly, you must see an error to succeed. If you don't see it during build, it doesn't work.
-RUN /tmp/download-z4h.zsh && rm /tmp/download-z4h.zsh
-
-# Note that we won't use /root as the home dir when we are running. Instead
-# the contents of /root are copied to /workspaces/root and /workspaces/root
-# is used as home, so user's changes in home are preserved across restarts.
-
-# Remove history files to avoid overwriting users' history later.
-RUN rm -f /root/.z /root/.*_history
-
 ############ Configure docker ############
+# Move docker higher in the layers as it does not change often.
 
 ARG DOCKER_COMPOSE_VERSION=v2.39.2
 ARG BUILDX_VERSION=v0.26.1

@@ -39,11 +39,11 @@ All examples are thoroughly commented so go ahead and read the files in them, ch
 
 To achieve DinD with GPU, I used custom base images with DevPod. You can search for `*.dockerfile` in this project root to see what images are available.
 
-- `ubuntu24.04-cuda12.8.1-docker28.3.3-python3.12-uv0.8.15`: just as the name suggestd, it's based on Ubuntu 24.04 with CUDA 12.8.1 development environment, Docker in Docker 28.3.3, Python 3.12, and UV 0.8.15.
-- `ubuntu24.04-docker28.3.3-golang1.25.1-python3.12-uv0.8.15`: this one is a pure-CPU image, based on Ubuntu 24.04 with Docker in Docker 28.3.3, Golang 1.25.1, Python 3.12 and UV 0.8.15
+- `ubuntu24.04-cuda12.8.1-docker28.3.3-golang1.25.1-node24.11.1-python3.12-uv0.8.15`: just as the name suggestd, it's based on Ubuntu 24.04 with CUDA 12.8.1 development environment, with other developer tools.
+- `ubuntu24.04-docker28.3.3-golang1.25.1-node24.11.1-python3.12-uv0.8.15`: this one is a pure-CPU image
 
 All image has basic build tools (e.g. gcc, g++, make) and netwrk tools (e.g. dig, traceroute, iproute2) available..
 
-To build a image, run `make <image-name>`. For example, to build `ubuntu24.04-cuda12.8.1-docker28.3.3-python3.12-uv0.8.15`, run `make ubuntu24.04-cuda12.8.1-docker28.3.3-python3.12-uv0.8.15`.
+To build a image, run `make <image-name>`. For example, to build `ubuntu24.04-docker28.3.3-golang1.25.1-node24.11.1-python3.12-uv0.8.15`, run `make ubuntu24.04-docker28.3.3-golang1.25.1-node24.11.1-python3.12-uv0.8.15`.
 
 To use custom image name, `DOCKER_REPO=exmaple.com/user/devpod DOCKER_TAG_PREFIX=xxxxx- make <image-name>` will build an image with name `exmaple.com/user/devpod:xxxxx-<image-name>`. This is useful if you want to push images to private repositories.
