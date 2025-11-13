@@ -1,4 +1,3 @@
-ARG CUDA_VERSION=12.8.1
 ARG UBUNTU_VERSION=24.04
 ARG DOCKER_VERSION=28.3.3
 
@@ -6,14 +5,13 @@ ARG DOCKER_VERSION=28.3.3
 FROM docker:${DOCKER_VERSION}-dind AS dind
 
 # Our base image
-FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu${UBUNTU_VERSION}
+FROM ubuntu:${UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # I build image in Azure so use Azure mirrors.
 RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
     sed -i 's@//security.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
-    rm /etc/apt/sources.list.d/cuda.list && \
     apt-get update && \
     \
     apt-get install -y \
@@ -28,6 +26,7 @@ RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sour
         software-properties-common netcat-openbsd ffmpeg \
         kmod devscripts debhelper fakeroot dkms check dmidecode \
         fio wrk supervisor shadowsocks-libev smartmontools \
+        e2fsprogs \
         \
         build-essential automake ninja-build meson ccache gdb \
         \
@@ -71,10 +70,6 @@ RUN export INSTALLER=sing-box-${SINGBOX_VERSION}-linux-$(dpkg --print-architectu
 
 ############ Configure dev environments ############
 
-# Nsight Systems
-RUN curl -fsSL -o nsys.deb https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2025_5/NsightSystems-linux-cli-public-2025.5.1.121-3638078.deb && \
-    dpkg -i nsys.deb && \
-    rm nsys.deb
 
 # Locales
 RUN echo "LC_ALL=en_US.UTF-8" >/etc/environment && \
@@ -85,6 +80,27 @@ RUN echo "LC_ALL=en_US.UTF-8" >/etc/environment && \
 # Install uv
 ARG UV_VERSION=0.8.15
 RUN curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh
+
+# Install Golang
+ARG GO_VERSION=1.25.1
+ARG TARGETPLATFORM=amd64
+RUN export GOINST=go${GO_VERSION}.linux-${TARGETPLATFORM}.tar.gz && \
+    curl -fsSL -o ${GOINST} https://go.dev/dl/${GOINST} && \
+    tar -C /usr/local -xzf ${GOINST} && \
+    rm -f ${GOINST}
+# No need to set Golang into PATH because it's already in dotfiles.
+
+# Install fnm
+RUN curl -fsSL -o fnm.zip https://github.com/Schniz/fnm/releases/download/v1.38.1/fnm-linux.zip && \
+    unzip fnm.zip && \
+    rm fnm.zip && \
+    chmod +x fnm && mv fnm /usr/local/bin
+# Add fnm env to shell. Replace the actual home dir with $HOME as we will change home dir on container start.
+RUN echo "# BEGIN FNM">>~/dotfiles/env/custom.sh && \
+    fnm env | sed "s|$HOME|\$HOME|g" >>~/dotfiles/env/custom.sh && \
+    echo "# END FNM">>~/dotfiles/env/custom.sh
+# install node
+RUN fnm install v24.11.1
 
 ############ Configure dotfiles ############
 
@@ -145,28 +161,8 @@ RUN set -eux; \
     docker-compose version && \
     ln -s /usr/local/bin/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
 
-# Install NVIDIA Container Toolkit
-ARG NVIDIA_CONTAINER_TOOLKIT_VERSION=1.17.8-1
-RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg && \
-    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-RUN apt-get update && \
-    apt-get install -y \
-      nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      libnvidia-container-tools=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-    && \
-    \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 # Default Docker daemon config
 COPY config/docker-daemon.json /etc/docker/daemon.json
-
-# Configure NVIDIA Container Toolkit
-RUN nvidia-ctk runtime configure --runtime=docker
 
 # Create docker group
 RUN groupadd -f docker
