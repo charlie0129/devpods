@@ -14,119 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN sed -i 's@//.*archive.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
     sed -i 's@//security.ubuntu.com@//azure.archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources && \
     rm /etc/apt/sources.list.d/cuda.list && \
-    apt-get update && \
-    \
-    apt-get install -y \
-        zsh git git-lfs curl wget locales file iptables \
-        htop vim gnupg numactl traceroute telnet apache2 \
-        sysstat zip unzip ca-certificates lsof ncdu less \
-        python3 python3-venv python3-pip \
-        sudo iotop strace screen tmux lsd btop jq zstd proxychains4 \
-        rsync shellcheck socat tree openssh-server aria2 \
-        iperf iperf3 net-tools lshw pciutils usbutils ethtool \
-        nmap bind9-dnsutils bind9-utils iputils-ping iproute2 \
-        software-properties-common netcat-openbsd ffmpeg \
-        kmod devscripts debhelper fakeroot dkms check dmidecode \
-        fio wrk supervisor shadowsocks-libev smartmontools \
-        e2fsprogs \
-        \
-        build-essential automake ninja-build meson ccache gdb \
-        \
-        libsm6 libxext6 libgl1 python3-dev libpython3-dev \
-        libopenmpi-dev libnuma1 libnuma-dev \
-        libibverbs-dev libibverbs1 libibumad3 \
-        librdmacm1 libnl-3-200 libnl-route-3-200 libnl-route-3-dev libnl-3-dev \
-        ibverbs-providers infiniband-diags perftest \
-        libgtest-dev libjsoncpp-dev libunwind-dev \
-        libboost-all-dev libssl-dev \
-        libgrpc-dev libgrpc++-dev libprotobuf-dev protobuf-compiler-grpc \
-        pybind11-dev \
-        libhiredis-dev libcurl4-openssl-dev \
-        libczmq4 libczmq-dev \
-        libfabric-dev \
-        patchelf libsubunit0 libsubunit-dev \
-        \
-        libibverbs-dev rdma-core infiniband-diags perftest nvtop \
-        && \
-    \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    sed -i 's@//.*archive.ubuntu.com@//archive.ubuntu.com@g' /etc/apt/sources.list.d/ubuntu.sources
-
-# Install newer versions of cmake (versions in apt are too old)
-RUN CMAKE_VERSION=4.1.1 \
-    && ARCH=$(uname -m) \
-    && CMAKE_INSTALLER="cmake-${CMAKE_VERSION}-linux-${ARCH}" \
-    && curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/${CMAKE_INSTALLER}.tar.gz" -o ${CMAKE_INSTALLER}.tar.gz \
-    && tar -xzf "${CMAKE_INSTALLER}.tar.gz" \
-    && cp -r "${CMAKE_INSTALLER}/bin/"* /usr/local/bin/ \
-    && cp -r "${CMAKE_INSTALLER}/share/"* /usr/local/share/ \
-    && rm -rf "${CMAKE_INSTALLER}" "${CMAKE_INSTALLER}.tar.gz"
-
-ARG SINGBOX_VERSION=1.12.8
-RUN export INSTALLER=sing-box-${SINGBOX_VERSION}-linux-$(dpkg --print-architecture) && \
-    curl -fsSL https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/$INSTALLER.tar.gz -o sing-box.tar.gz && \
-    tar zxf sing-box.tar.gz && \
-    mv $INSTALLER/sing-box /usr/local/bin && \
-    rm -rf sing-box*
-
-############ Configure dotfiles ############
-
-RUN chsh -s /usr/bin/zsh
-
-COPY build/dotfiles /root/dotfiles
-RUN /root/dotfiles/bootstrap.sh -f
-
-COPY scripts/download-z4h.zsh /tmp/download-z4h.zsh
-# Errors like "can't change option: monitor" can be ignored because there no TTY.
-# Note that you must see this error "[ERROR]: gitstatus failed to initialize." for this script to succeed.
-# Yes, weirdly, you must see an error to succeed. If you don't see it during build, it doesn't work.
-RUN /tmp/download-z4h.zsh && rm /tmp/download-z4h.zsh
-
-# Note that we won't use /root as the home dir when we are running. Instead
-# the contents of /root are copied to /workspaces/root and /workspaces/root
-# is used as home, so user's changes in home are preserved across restarts.
-
-# Remove history files to avoid overwriting users' history later.
-RUN rm -f /root/.z /root/.*_history
-
-############ Configure dev environments ############
-
-# Nsight Systems
-RUN curl -fsSL -o nsys.deb https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2025_5/NsightSystems-linux-cli-public-2025.5.1.121-3638078.deb && \
-    dpkg -i nsys.deb && \
-    rm nsys.deb
-
-# Locales
-RUN echo "LC_ALL=en_US.UTF-8" >/etc/environment && \
-    echo "en_US.UTF-8 UTF-8" >/etc/locale.gen && \
-    echo "LANG=en_US.UTF-8" >/etc/locale.conf && \
-    locale-gen en_US.UTF-8
-
-# Install uv
-ARG UV_VERSION=0.8.15
-RUN curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh
-
-# Install Golang
-ARG GO_VERSION=1.25.1
-ARG TARGETPLATFORM=amd64
-RUN export GOINST=go${GO_VERSION}.linux-${TARGETPLATFORM}.tar.gz && \
-    curl -fsSL -o ${GOINST} https://go.dev/dl/${GOINST} && \
-    tar -C /usr/local -xzf ${GOINST} && \
-    rm -f ${GOINST}
-# No need to set Golang into PATH because it's already in dotfiles.
-
-# Install fnm
-RUN curl -fsSL -o fnm.zip https://github.com/Schniz/fnm/releases/download/v1.38.1/fnm-linux.zip && \
-    unzip fnm.zip && \
-    rm fnm.zip && \
-    chmod +x fnm && mv fnm /usr/local/bin
-# Add fnm env to shell. Replace the actual home dir with $HOME as we will change home dir on container start.
-RUN echo "# BEGIN FNM">>~/dotfiles/env/custom.sh && \
-    fnm env | sed "s|$HOME|\$HOME|g" >>~/dotfiles/env/custom.sh && \
-    echo "# END FNM">>~/dotfiles/env/custom.sh
-# install node
-RUN fnm install v24.11.1
+    apt-get update
 
 ############ Configure docker ############
 # Move docker higher in the layers as it does not change often.
@@ -138,7 +26,8 @@ ARG DOCKER_CHANNEL=stable
 ARG DOCKER_VERSION
 
 # Set iptables-legacy for Ubuntu 22.04 and newer
-RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
+RUN apt-get install -y iptables curl && \
+        update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # Install Docker and buildx
 RUN set -eux; \
@@ -179,11 +68,7 @@ RUN apt-get update && \
       nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       libnvidia-container-tools=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-      libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
-    && \
-    \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+      libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION}
 
 # Default Docker daemon config
 COPY config/docker-daemon.json /etc/docker/daemon.json
@@ -199,6 +84,120 @@ COPY --from=dind /usr/local/bin/modprobe /usr/local/bin/modprobe
 
 # So we can use overlay2
 VOLUME /var/lib/docker
+
+############ Configure dotfiles ############
+
+RUN apt-get install -y \
+        zsh git util-linux
+
+RUN chsh -s /usr/bin/zsh
+
+COPY build/dotfiles /root/dotfiles
+RUN /root/dotfiles/bootstrap.sh -f
+
+# make a fake systemd binary to let the z4h installer download all dependencies.
+RUN mkdir -p /usr/lib/systemd && touch /usr/lib/systemd/systemd && \
+    chmod +x /usr/lib/systemd/systemd && \
+    bash -c "script -qec zsh /dev/null <<<nexit" && \
+    rm /usr/lib/systemd/systemd
+
+# Note that we won't use /root as the home dir when we are running. Instead
+# the contents of /root are copied to /workspaces/root and /workspaces/root
+# is used as home, so user's changes in home are preserved across restarts.
+
+# Remove history files to avoid overwriting users' history later.
+RUN rm -f /root/.z /root/.*_history
+
+############ Dependencies ############
+
+RUN apt-get install -y \
+        git-lfs curl wget locales file iptables \
+        htop vim gnupg numactl traceroute telnet apache2 \
+        sysstat zip unzip ca-certificates lsof ncdu less \
+        python3 python3-venv python3-pip \
+        sudo iotop strace screen tmux lsd btop jq zstd proxychains4 \
+        rsync shellcheck socat tree openssh-server aria2 \
+        iperf iperf3 net-tools lshw pciutils usbutils ethtool \
+        nmap bind9-dnsutils bind9-utils iputils-ping iproute2 \
+        software-properties-common netcat-openbsd ffmpeg \
+        kmod devscripts debhelper fakeroot dkms check dmidecode \
+        fio wrk supervisor shadowsocks-libev smartmontools \
+        e2fsprogs
+
+RUN apt-get install -y \
+        build-essential automake ninja-build meson ccache gdb
+
+RUN apt-get install -y \
+        libsm6 libxext6 libgl1 python3-dev libpython3-dev \
+        libopenmpi-dev libnuma1 libnuma-dev \
+        libibverbs-dev libibverbs1 libibumad3 \
+        librdmacm1 libnl-3-200 libnl-route-3-200 libnl-route-3-dev libnl-3-dev \
+        ibverbs-providers infiniband-diags perftest \
+        libgtest-dev libjsoncpp-dev libunwind-dev \
+        libboost-all-dev libssl-dev \
+        libgrpc-dev libgrpc++-dev libprotobuf-dev protobuf-compiler-grpc \
+        pybind11-dev \
+        libhiredis-dev libcurl4-openssl-dev \
+        libczmq4 libczmq-dev \
+        libfabric-dev \
+        patchelf libsubunit0 libsubunit-dev \
+        \
+        libibverbs-dev rdma-core infiniband-diags perftest nvtop
+
+# Install newer versions of cmake (versions in apt are too old)
+RUN CMAKE_VERSION=4.1.1 \
+    && ARCH=$(uname -m) \
+    && CMAKE_INSTALLER="cmake-${CMAKE_VERSION}-linux-${ARCH}" \
+    && curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/${CMAKE_INSTALLER}.tar.gz" -o ${CMAKE_INSTALLER}.tar.gz \
+    && tar -xzf "${CMAKE_INSTALLER}.tar.gz" \
+    && cp -r "${CMAKE_INSTALLER}/bin/"* /usr/local/bin/ \
+    && cp -r "${CMAKE_INSTALLER}/share/"* /usr/local/share/ \
+    && rm -rf "${CMAKE_INSTALLER}" "${CMAKE_INSTALLER}.tar.gz"
+
+ARG SINGBOX_VERSION=1.12.8
+RUN export INSTALLER=sing-box-${SINGBOX_VERSION}-linux-$(dpkg --print-architecture) && \
+    curl -fsSL https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/$INSTALLER.tar.gz -o sing-box.tar.gz && \
+    tar zxf sing-box.tar.gz && \
+    mv $INSTALLER/sing-box /usr/local/bin && \
+    rm -rf sing-box*
+
+############ Configure dev environments ############
+
+# Nsight Systems
+RUN curl -fsSL -o nsys.deb https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2025_5/NsightSystems-linux-cli-public-2025.5.1.121-3638078.deb && \
+    dpkg -i nsys.deb && \
+    rm nsys.deb
+
+# Locales
+RUN echo "LC_ALL=en_US.UTF-8" >/etc/environment && \
+    echo "en_US.UTF-8 UTF-8" >/etc/locale.gen && \
+    echo "LANG=en_US.UTF-8" >/etc/locale.conf && \
+    locale-gen en_US.UTF-8
+
+# Install uv
+ARG UV_VERSION=0.8.15
+RUN curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh
+
+# Install Golang
+ARG GO_VERSION=1.25.1
+ARG TARGETPLATFORM=amd64
+RUN export GOINST=go${GO_VERSION}.linux-${TARGETPLATFORM}.tar.gz && \
+    curl -fsSL -o ${GOINST} https://go.dev/dl/${GOINST} && \
+    tar -C /usr/local -xzf ${GOINST} && \
+    rm -f ${GOINST}
+# No need to set Golang into PATH because it's already in dotfiles.
+
+# Install fnm
+RUN curl -fsSL -o fnm.zip https://github.com/Schniz/fnm/releases/download/v1.38.1/fnm-linux.zip && \
+    unzip fnm.zip && \
+    rm fnm.zip && \
+    chmod +x fnm && mv fnm /usr/local/bin
+# Add fnm env to shell. Replace the actual home dir with $HOME as we will change home dir on container start.
+RUN echo "# BEGIN FNM">>~/dotfiles/env/custom.sh && \
+    fnm env | sed "s|$HOME|\$HOME|g" >>~/dotfiles/env/custom.sh && \
+    echo "# END FNM">>~/dotfiles/env/custom.sh
+# install node
+RUN fnm install v24.11.1
 
 ############ Copy common scripts ############
 COPY scripts/ubuntu-use-china-mirror.sh /root/bin/ubuntu-use-china-mirror.sh

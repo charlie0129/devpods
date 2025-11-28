@@ -52,12 +52,9 @@ git config --global --add safe.directory '*'
 info "Using plain text credential helper for git"
 git config --global credential.helper store
 
-# Ensure Docker config directory exists
-mkdir -p /workspaces/root/.docker
-
 if [[ -f /workspaces/root/.docker/daemon.json ]]; then
-    info "Custom Docker daemon config exists, skip copying." config /workspaces/root/.docker/daemon.json
+    info "Custom Docker daemon config exists, using it." config /workspaces/root/.docker/daemon.json
+    cp /workspaces/root/.docker/daemon.json /etc/docker/daemon.json
 else
-    info "Copy default Docker daemon config" from /etc/docker/daemon.json to /workspaces/root/.docker/daemon.json
-    cp /etc/docker/daemon.json /workspaces/root/.docker/daemon.json
+    info "No custom Docker daemon config found. Using the default one."
 fi
