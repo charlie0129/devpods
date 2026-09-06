@@ -88,18 +88,26 @@ VOLUME /var/lib/docker
 ############ Configure dotfiles ############
 
 RUN apt-get install -y \
-        zsh git util-linux
+        zsh git
 
 RUN chsh -s /usr/bin/zsh
 
 COPY build/dotfiles /root/dotfiles
 RUN /root/dotfiles/bootstrap.sh -f
 
-# make a fake systemd binary to let the z4h installer download all dependencies.
+# Prime the z4h cache (fzf, powerlevel10k, gitstatus, plugins, etc.) so the
+# first shell start does not download anything. The fake systemd binary makes
+# z4h also fetch systemd completions. Z4H_BOOTSTRAPPING is z4h's own
+# non-interactive escape hatch: .zshenv lets a non-interactive zsh through and
+# z4h's main.zsh then exec's `zsh -i`, which sources .zshrc and installs
+# everything. The shell exits by itself on stdin EOF, so no PTY (script) is
+# needed. The final checks fail the build loudly if downloads did not complete.
 RUN mkdir -p /usr/lib/systemd && touch /usr/lib/systemd/systemd && \
     chmod +x /usr/lib/systemd/systemd && \
-    bash -c "script -qec zsh /dev/null <<<nexit" && \
-    rm /usr/lib/systemd/systemd
+    Z4H_BOOTSTRAPPING=1 zsh -c : && \
+    rm /usr/lib/systemd/systemd && \
+    test -x /root/.cache/zsh4humans/v5/fzf/bin/fzf && \
+    test -d /root/.cache/zsh4humans/v5/ohmyzsh/ohmyzsh
 
 # Note that we won't use /root as the home dir when we are running. Instead
 # the contents of /root are copied to /workspaces/root and /workspaces/root
